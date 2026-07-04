@@ -1,4 +1,3 @@
-# app.py (第六天完整版)
 import streamlit as st
 from utils.llm_client import call_llm
 from utils.prompt_templates import (
@@ -153,29 +152,33 @@ col1, col2 = st.columns(2, gap="medium")
 
 with col1:
     st.markdown("### 你的简历内容")
-    uploaded_file = st.file_uploader(
-        "上传简历文件（PDF / DOCX / TXT）",
-        type=["pdf", "docx", "txt"],
-        key="resume_uploader",
-        help="上传后自动提取文本，将覆盖下方手动输入的内容。"
-    )
-    if uploaded_file is not None:
-        file_bytes = uploaded_file.read()
-        file_type = uploaded_file.name.split(".")[-1].lower()
-        try:
-            parsed_text = parse_resume_file(file_bytes, file_type)
-            st.session_state.resume_text = parsed_text
-            st.success(f"✅ 已成功解析 {uploaded_file.name}，共 {len(parsed_text)} 字符。")
-        except Exception as e:
-            st.error(f"文件解析失败：{str(e)}")
+   uploaded_file = st.file_uploader(
+    "上传简历文件（PDF / DOCX / TXT）",
+    type=["pdf", "docx", "txt"],
+    key="resume_uploader",
+    help="上传后自动提取文本，将覆盖下方手动输入的内容。"
+)
 
-    resume_text = st.text_area(
-        label="或手动粘贴简历文本",
-        height=300,
-        placeholder="例如：教育背景、技能、项目经历、实习经历等...",
-        key="resume_text_area",
-        value=st.session_state.resume_text
-    )
+if uploaded_file is not None:
+    # 注意：每次上传都会触发重新运行，但读取文件内容需要先读取
+    file_bytes = uploaded_file.getvalue()  # 使用 getvalue() 更安全
+    file_type = uploaded_file.name.split(".")[-1].lower()
+    try:
+        parsed_text = parse_resume_file(file_bytes, file_type)
+        # 更新 session_state
+        st.session_state.resume_text = parsed_text
+        st.success(f"✅ 解析成功！共提取 {len(parsed_text)} 个字符。")
+    except Exception as e:
+        st.error(f"❌ 文件解析失败：{str(e)}")
+
+      resume_text = st.text_area(
+      label="或手动粘贴简历文本",
+      height=300,
+      placeholder="...",
+      key="resume_text_input"  # 这个 key 是给组件用的
+)
+# 从 session_state 读取输入值，并存到我们统一的变量中
+st.session_state.resume_text = st.session_state.resume_text_input
     st.session_state.resume_text = resume_text
 
 with col2:
@@ -453,4 +456,5 @@ with tab6:
         st.info("点击「一键完整分析」生成结果。")
 
 st.divider()
+st.caption("AI Resume Assistant v0.6 | 支持历史记录持久化")
 st.caption("AI Resume Assistant v0.6 | 支持历史记录持久化")
