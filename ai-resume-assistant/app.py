@@ -154,24 +154,34 @@ with col1:
         key="resume_uploader",
         help="上传后自动提取文本，将覆盖下方手动输入的内容。"
     )
+
+    # 处理上传文件
     if uploaded_file is not None:
         file_bytes = uploaded_file.getvalue()
         file_type = uploaded_file.name.split(".")[-1].lower()
         try:
             parsed_text = parse_resume_file(file_bytes, file_type)
-            st.session_state.resume_text = parsed_text
-            st.success(f"✅ 解析成功！共提取 {len(parsed_text)} 个字符。")
+            if parsed_text.strip():
+                # 直接更新 text_area 对应的 session_state
+                st.session_state.resume_text_area = parsed_text
+                st.session_state.resume_text = parsed_text
+                st.success(f"✅ 解析成功！共提取 {len(parsed_text)} 个字符。")
+                # 强制刷新页面以更新 text_area 显示
+                st.rerun()
+            else:
+                st.error("❌ 解析结果为空，可能是扫描件或图片型 PDF。请手动输入。")
         except Exception as e:
             st.error(f"❌ 文件解析失败：{str(e)}")
 
+    # 简历文本输入框（使用 key 绑定，不设 value）
     resume_text = st.text_area(
         label="或手动粘贴简历文本",
         height=300,
         placeholder="例如：教育背景、技能、项目经历、实习经历等...",
-        key="resume_text_area",
-        value=st.session_state.resume_text
+        key="resume_text_area"  # 关键：使用 key 绑定
     )
-    st.session_state.resume_text = resume_text
+    # 同步到统一的 resume_text
+    st.session_state.resume_text = st.session_state.resume_text_area
 
 with col2:
     st.markdown("### 目标岗位 JD")
