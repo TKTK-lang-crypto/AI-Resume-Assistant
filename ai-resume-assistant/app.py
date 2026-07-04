@@ -60,12 +60,12 @@ with st.sidebar:
     st.markdown("### 开发进度")
     st.markdown(
         """
-        ✅ 页面原型  
-        ✅ 接入大模型 API  
-        ✅ 拆分 Prompt 功能  
-        ✅ 文件上传支持  
-        ✅ 结果结构化展示  
-        ✅ 历史记录持久化  
+        ✅ 页面原型
+        ✅ 接入大模型 API
+        ✅ 拆分 Prompt 功能
+        ✅ 文件上传支持
+        ✅ 结果结构化展示
+        ✅ 历史记录持久化
         """
     )
     st.divider()
@@ -85,7 +85,6 @@ with st.sidebar:
             options = []
             id_map = {}
             for rec in records:
-                # 类型映射
                 type_map = {
                     'keyword': '关键词',
                     'match': '匹配度',
@@ -105,7 +104,6 @@ with st.sidebar:
             )
             if selected_display:
                 rec_id = id_map[selected_display]
-                # 获取该记录完整数据
                 rec = next((r for r in records if r['id'] == rec_id), None)
                 if rec:
                     st.text_area(
@@ -118,10 +116,8 @@ with st.sidebar:
                     col1, col2 = st.columns(2)
                     with col1:
                         if st.button("📂 加载到当前", key="load_history", use_container_width=True):
-                            # 填充简历和JD
                             st.session_state.resume_text = rec['resume_text']
                             st.session_state.job_description = rec['job_description']
-                            # 根据类型填充对应的结果
                             type_key_map = {
                                 'keyword': 'keyword_result',
                                 'match': 'match_result',
@@ -152,33 +148,29 @@ col1, col2 = st.columns(2, gap="medium")
 
 with col1:
     st.markdown("### 你的简历内容")
-   uploaded_file = st.file_uploader(
-    "上传简历文件（PDF / DOCX / TXT）",
-    type=["pdf", "docx", "txt"],
-    key="resume_uploader",
-    help="上传后自动提取文本，将覆盖下方手动输入的内容。"
-)
+    uploaded_file = st.file_uploader(
+        "上传简历文件（PDF / DOCX / TXT）",
+        type=["pdf", "docx", "txt"],
+        key="resume_uploader",
+        help="上传后自动提取文本，将覆盖下方手动输入的内容。"
+    )
+    if uploaded_file is not None:
+        file_bytes = uploaded_file.getvalue()
+        file_type = uploaded_file.name.split(".")[-1].lower()
+        try:
+            parsed_text = parse_resume_file(file_bytes, file_type)
+            st.session_state.resume_text = parsed_text
+            st.success(f"✅ 解析成功！共提取 {len(parsed_text)} 个字符。")
+        except Exception as e:
+            st.error(f"❌ 文件解析失败：{str(e)}")
 
-if uploaded_file is not None:
-    # 注意：每次上传都会触发重新运行，但读取文件内容需要先读取
-    file_bytes = uploaded_file.getvalue()  # 使用 getvalue() 更安全
-    file_type = uploaded_file.name.split(".")[-1].lower()
-    try:
-        parsed_text = parse_resume_file(file_bytes, file_type)
-        # 更新 session_state
-        st.session_state.resume_text = parsed_text
-        st.success(f"✅ 解析成功！共提取 {len(parsed_text)} 个字符。")
-    except Exception as e:
-        st.error(f"❌ 文件解析失败：{str(e)}")
-
-      resume_text = st.text_area(
-      label="或手动粘贴简历文本",
-      height=300,
-      placeholder="...",
-      key="resume_text_input"  # 这个 key 是给组件用的
-)
-# 从 session_state 读取输入值，并存到我们统一的变量中
-st.session_state.resume_text = st.session_state.resume_text_input
+    resume_text = st.text_area(
+        label="或手动粘贴简历文本",
+        height=300,
+        placeholder="例如：教育背景、技能、项目经历、实习经历等...",
+        key="resume_text_area",
+        value=st.session_state.resume_text
+    )
     st.session_state.resume_text = resume_text
 
 with col2:
@@ -222,12 +214,10 @@ def check_inputs(require_resume=True):
     return True
 
 def safe_call_llm(prompt, result_key, analysis_type, success_msg="分析完成！"):
-    """调用大模型并保存历史记录"""
     try:
         with st.spinner("正在调用大模型，请稍候..."):
             result = call_llm(prompt)
         st.session_state[result_key] = result
-        # 保存到数据库
         db.save_record(
             analysis_type=analysis_type,
             resume_text=st.session_state.resume_text,
@@ -456,5 +446,4 @@ with tab6:
         st.info("点击「一键完整分析」生成结果。")
 
 st.divider()
-st.caption("AI Resume Assistant v0.6 | 支持历史记录持久化")
 st.caption("AI Resume Assistant v0.6 | 支持历史记录持久化")
